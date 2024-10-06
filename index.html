@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exoplanet Exploration</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        height: 100vh;
+        overflow: hidden;
+        background: black;
+      }
+
+      .galaxy {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+
+      .star {
+        position: absolute;
+        background: white;
+        border-radius: 50%;
+        opacity: 0.8;
+        animation: blink 2s infinite ease-in-out;
+        z-index: 1;
+      }
+
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 0.8;
+        }
+        50% {
+          opacity: 0.2;
+        }
+      }
+
+      .shooting-star {
+        position: absolute;
+        background: white;
+        height: 2px;
+        opacity: 0.8;
+        transform-origin: 0 50%;
+        animation: shoot 1s forwards;
+        z-index: 1;
+      }
+
+      @keyframes shoot {
+        0% {
+          transform: translateX(0) translateY(0);
+          opacity: 1;
+        }
+        100% {
+          transform: translateX(100vw) translateY(-50vh);
+          opacity: 0;
+        }
+      }
+
+      .planet {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0.9;
+        cursor: pointer;
+        z-index: 3;
+        animation: rotate 20s linear infinite; /* Slow rotation */
+      }
+
+      @keyframes rotate {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .label {
+        position: absolute;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+        text-align: center;
+        pointer-events: none;
+        z-index: 3;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(34, 34, 34, 0.9);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        display: none;
+        z-index: 10;
+        box-shadow: 0 0 15px rgba(255, 255, 0, 0.5);
+      }
+
+      .popup h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .popup p {
+        margin: 10px 0 0;
+      }
+
+      .popup .close {
+        background: #ff4c4c;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 5px 10px;
+        margin-top: 10px;
+        cursor: pointer;
+      }
+
+      .central-sun {
+        position: absolute;
+        background: radial-gradient(
+          circle,
+          yellow 0%,
+          orange 70%,
+          transparent 100%
+        );
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        top: calc(50% - 30px);
+        left: calc(50% - 30px);
+        box-shadow: 0 0 30px 10px rgba(255, 255, 0, 0.8);
+        z-index: 3;
+      }
+
+      .dotted-line {
+        stroke: rgba(255, 255, 0, 0.8);
+        stroke-width: 2;
+        stroke-dasharray: 5, 5;
+        z-index: 2;
+      }
+
+      .speaker-icon {
+        cursor: pointer;
+        display: inline-block;
+        margin-left: 10px;
+        width: 20px;
+        height: 20px;
+        background-image: url("https://img.icons8.com/ios-filled/50/ffffff/speaker.png"); /* Example speaker icon */
+        background-size: cover;
+        vertical-align: middle;
+      }
+      .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 3; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        background-color: rgba(
+          0,
+          0,
+          0,
+          0.8
+        ); /* Black background with opacity */
+        justify-content: center; /* Center modal */
+        align-items: center; /* Center modal */
+      }
+      .modal-content {
+        background-color: #fff; /* White background */
+        border-radius: 15px; /* Rounded corners */
+        padding: 30px;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); /* Soft shadow */
+        width: 90%; /* Full width on small screens */
+        max-width: 500px; /* Max width on larger screens */
+      }
+      .modal h2 {
+        margin-bottom: 10px; /* Space below heading */
+        font-family: Arial, sans-serif;
+        color: #333; /* Darker text color */
+      }
+      .modal p {
+        margin-bottom: 20px; /* Space below paragraph */
+        font-family: Arial, sans-serif;
+        color: #666; /* Medium gray text color */
+      }
+      .close {
+        background-color: #ff724c; /* Button color */
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s; /* Smooth transition */
+      }
+      .close:hover {
+        background-color: #ff5722; /* Darker shade on hover */
+      }
+    </style>
+  </head>
+  <body>
+    <audio
+      id="myAudio"
+      src="https://gnonbgjivjlnzejovgaw.supabase.co/storage/v1/object/sign/Images/intestellar.mp3?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJJbWFnZXMvaW50ZXN0ZWxsYXIubXAzIiwiaWF0IjoxNzI4MTk3MTE1LCJleHAiOjE3MzA3ODkxMTV9.iC-MhdX59_3xfIl8_Wmw-L7ClgatPXmzHwk8IjdEUN0&t=2024-10-06T06%3A45%3A16.047Z"
+      preload="auto"
+    ></audio>
+    <div class="galaxy">
+      <svg
+        id="lines"
+        style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+        "
+      ></svg>
+
+      <div class="central-sun"></div>
+    </div>
+    <div class="modal" id="myModal">
+      <div class="modal-content">
+        <h2>Welcome to the Exoplanet Exploration!</h2>
+        <p>
+          Discover the wonders of exoplanets beyond our solar system. Click
+          "Enter" to start your journey.
+        </p>
+        <p>Join us in exploring the mysteries of the cosmos!</p>
+        <button class="close" id="enterButton">Enter</button>
+      </div>
+    </div>
+    <div class="popup" id="popup">
+      <h2 id="popup-title"></h2>
+      <p id="popup-details"></p>
+      <button class="close" id="close-popup">Close</button>
+      <span class="speaker-icon" id="speaker-icon"></span>
+    </div>
+    <script>
+      window.onload = function () {
+        document.getElementById("myModal").style.display = "flex";
+      };
+
+      function playAudio() {
+        var audio = document.getElementById("myAudio");
+        audio.play().catch(function (error) {
+          console.log("Audio playback prevented:", error);
+        });
+      }
+
+      document.getElementById("enterButton").onclick = function () {
+        document.getElementById("myModal").style.display = "none";
+        playAudio();
+      };
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          document.getElementById("myModal").style.display = "none";
+          playAudio();
+        }
+      });
+    </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const galaxy = document.querySelector(".galaxy");
+        const popup = document.getElementById("popup");
+        const popupTitle = document.getElementById("popup-title");
+        const popupDetails = document.getElementById("popup-details");
+        const closePopup = document.getElementById("close-popup");
+        const speakerIcon = document.getElementById("speaker-icon");
+        const svgLines = document.getElementById("lines");
+        const sun = document.querySelector(".central-sun");
+
+        for (let i = 0; i < 1000; i++) {
+          const star = document.createElement("div");
+          star.classList.add("star");
+
+          const size = Math.random() * 3 + 1;
+          const topPos = Math.random() * 100;
+          const leftPos = Math.random() * 100;
+          const duration = Math.random() * 3 + 1;
+
+          star.style.width = `${size}px`;
+          star.style.height = `${size}px`;
+          star.style.top = `${topPos}vh`;
+          star.style.left = `${leftPos}vw`;
+          star.style.animationDuration = `${duration}s`;
+
+          galaxy.appendChild(star);
+        }
+
+        function speak(text) {
+          const utterance = new SpeechSynthesisUtterance(text);
+          speechSynthesis.speak(utterance);
+        }
+
+        function createShootingStar() {
+          const shootingStar = document.createElement("div");
+          shootingStar.classList.add("shooting-star");
+
+          const startX = Math.random() * 100;
+          const startY = Math.random() * 50;
+
+          shootingStar.style.width = `${Math.random() * 2 + 1}px`;
+          shootingStar.style.top = `${startY}vh`;
+          shootingStar.style.left = `${startX}vw`;
+          shootingStar.style.animationDuration = `${
+            Math.random() * 0.5 + 0.5
+          }s`;
+
+          galaxy.appendChild(shootingStar);
+
+          shootingStar.addEventListener("animationend", () => {
+            shootingStar.remove();
+          });
+        }
+
+        setInterval(createShootingStar, 3000);
+
+        function createPlanet(
+          size,
+          topPos,
+          leftPos,
+          name,
+          details,
+          color,
+          distance
+        ) {
+          const planet = document.createElement("div");
+          planet.classList.add("planet");
+          planet.style.width = `${size}px`;
+          planet.style.height = `${size}px`;
+          planet.style.top = `${topPos}vh`;
+          planet.style.left = `${leftPos}vw`;
+          planet.style.background = color;
+
+          const label = document.createElement("div");
+          label.classList.add("label");
+          label.innerText = name;
+          label.style.top = `${topPos + 5}vh`;
+          label.style.left = `${leftPos - 5}vw`;
+
+          galaxy.appendChild(planet);
+          galaxy.appendChild(label);
+
+          planet.addEventListener("click", () => {
+            popupTitle.innerText = name;
+            popupDetails.innerText = details;
+            popup.style.display = "block";
+
+            const planetRect = planet.getBoundingClientRect();
+            const sunRect = sun.getBoundingClientRect();
+
+            const line = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "line"
+            );
+            line.setAttribute("x1", planetRect.left + planetRect.width / 2);
+            line.setAttribute("y1", planetRect.top + planetRect.height / 2);
+            line.setAttribute("x2", sunRect.left + sunRect.width / 2);
+            line.setAttribute("y2", sunRect.top + sunRect.height / 2);
+            line.classList.add("dotted-line");
+
+            svgLines.appendChild(line);
+
+            const distanceLabel = document.createElement("div");
+            distanceLabel.classList.add("label");
+            distanceLabel.innerText = distance;
+
+            const midX =
+              (planetRect.left + sunRect.left + sunRect.width / 2) / 2;
+            const midY =
+              (planetRect.top + sunRect.top + sunRect.height / 2) / 2;
+            distanceLabel.style.top = `${midY}px`;
+            distanceLabel.style.left = `${midX}px`;
+
+            galaxy.appendChild(distanceLabel);
+
+            speakerIcon.onclick = () => {
+              speak(`${name}: ${details}`);
+            };
+          });
+        }
+
+        createPlanet(
+          20,
+          40,
+          45,
+          "Proxima Centauri b",
+          "A rocky, Earth-sized exoplanet orbiting the closest star to the Sun, Proxima Centauri. It resides in the habitable zone, where liquid water might exist, though its star’s flare activity could affect its habitability.",
+          "radial-gradient(circle, #65350F 0%, #65350F 50%, transparent 100%)",
+          "Distance: 4.24 light-years"
+        );
+        createPlanet(
+          15,
+          30,
+          60,
+          "Barnard Star b",
+          "A cold super-Earth, orbiting Barnard’s Star. It’s much colder than Earth, with surface temperatures around -170°C, so its likely icy or rocky.",
+          "radial-gradient(circle, #00ccff 0%, #808080 50%, transparent 100%)",
+          "Distance: 6.0 light-years"
+        );
+        createPlanet(
+          30,
+          20,
+          30,
+          "Luyten b",
+          "A super-Earth located in the habitable zone of Luytens Star. It might have liquid water on its surface and an atmosphere that could make it a candidate for further study in the search for life.",
+          "radial-gradient(circle, #ff6699 0%, #8080ff 0%, transparent 100%)",
+          "Distance: 12.2 light-years"
+        );
+
+        createPlanet(
+          25,
+          70,
+          20,
+          "GJ 667 Cc",
+          "A super-Earth orbiting in the habitable zone of a red dwarf star. Its orbit makes it one of the best candidates for habitability, although its proximity to the star may lead to tidal locking and extreme climates.",
+          "radial-gradient(circle, #ffcc33 0%, #ff0000 50%, transparent 100%)",
+          "Distance: 23.62 light-years"
+        );
+        createPlanet(
+          10,
+          80,
+          75,
+          "Wolf 1061c",
+          "A potentially rocky super-Earth that resides in the habitable zone of its star, Wolf 1061. Its proximity to the star may result in extreme weather and tidal locking.",
+          "radial-gradient(circle, #ccffcc 0%, #ff0000 50%, transparent 100%)",
+          "Distance: 13.8 light-years"
+        );
+        createPlanet(
+          22,
+          10,
+          15,
+          "Kepler-422b",
+          "A rocky exoplanet slightly larger than Earth, Kepler-442b orbits in the habitable zone of its star. It is one of the most Earth-like exoplanets in terms of size and temperature, making it a prime candidate for habitability.",
+          "radial-gradient(circle, #ff9933 0%, #65350F 50%, transparent 100%)",
+          "Distance: 1,200 light-years"
+        );
+        createPlanet(
+          18,
+          60,
+          85,
+          "51 Pegasi b",
+          'As a "hot Jupiter," this gas giant might have clouds reflecting its stars yellow light, leading to yellow or orange hues.',
+          "radial-gradient(circle, #ff9933 0%, #ff6600 50%, transparent 100%)",
+          "Distance: 50.45 light-years"
+        );
+        createPlanet(
+          12,
+          50,
+          30,
+          "Ross 128 b",
+          "If it has an Earth-like atmosphere, it could be blue, though a rocky, cloud-covered surface would likely be gray.",
+          "radial-gradient(circle, #99ccff 0%, #8080ff 50%, transparent 100%)",
+          "Distance: 11 light-years"
+        );
+        createPlanet(
+          28,
+          25,
+          90,
+          "Kepler-22b",
+          "It is potentially an ocean world, so its color might be dominated by water and clouds, giving it a blue or greenish tint.",
+          "radial-gradient(circle, #33ccff 0%, #0099cc 50%, transparent 100%)",
+          "Distance: 620 light-years"
+        );
+
+        closePopup.addEventListener("click", () => {
+          popup.style.display = "none";
+          speechSynthesis.cancel();
+        });
+      });
+    </script>
+  </body>
+</html>
